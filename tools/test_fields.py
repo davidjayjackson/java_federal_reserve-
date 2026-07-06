@@ -46,8 +46,10 @@ def main():
         rngh = sh.getCellRangeByName("D1:E30")
         rngh.setArrayFormula('=FRED_FIELDS("GDP";"%s";TRUE())' % key)
         doc.calculateAll()
-        data = [r for r in rng.getDataArray() if r[0] != ""]
-        datah = [r for r in rngh.getDataArray() if r[0] != ""]
+        # The array formula pads the reserved range past the returned rows;
+        # padding cells read back as None/"" -- keep only rows with a field name.
+        data = [r for r in rng.getDataArray() if r[0]]
+        datah = [r for r in rngh.getDataArray() if r[0]]
     finally:
         doc.close(False)
         desktop.terminate()
