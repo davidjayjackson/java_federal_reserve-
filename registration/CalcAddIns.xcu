@@ -128,7 +128,7 @@
                 <value xml:lang="en">field</value>
               </prop>
               <prop oor:name="Description">
-                <value xml:lang="en">Metadata field name, e.g. units, frequency, seasonal_adjustment, last_updated, notes.</value>
+                <value xml:lang="en">Metadata field name. One of: id, title, units, units_short, frequency, frequency_short, seasonal_adjustment, seasonal_adjustment_short, observation_start, observation_end, last_updated, popularity, notes. Use FRED_FIELDS to list the fields for a series.</value>
               </prop>
             </node>
             <node oor:name="apiKey" oor:op="replace">
@@ -137,6 +137,48 @@
               </prop>
               <prop oor:name="Description">
                 <value xml:lang="en">Optional. FRED API key; if omitted, the FRED_API_KEY environment variable is used. May reference a cell.</value>
+              </prop>
+            </node>
+          </node>
+        </node>
+
+        <!-- =FRED_FIELDS(series_id; [api_key]; [headers]) -->
+        <node oor:name="fredFields" oor:op="replace">
+          <prop oor:name="DisplayName">
+            <value xml:lang="en">FRED_FIELDS</value>
+          </prop>
+          <prop oor:name="Description">
+            <value xml:lang="en">Lists a FRED series' available metadata fields as a spillable two-column array (field, value). Use it to discover the valid field values accepted by FRED_META.</value>
+          </prop>
+          <prop oor:name="Category">
+            <value>Add-In</value>
+          </prop>
+          <prop oor:name="CompatibilityName">
+            <value xml:lang="en">FRED_FIELDS</value>
+          </prop>
+          <node oor:name="Parameters">
+            <node oor:name="seriesId" oor:op="replace">
+              <prop oor:name="DisplayName">
+                <value xml:lang="en">series_id</value>
+              </prop>
+              <prop oor:name="Description">
+                <value xml:lang="en">FRED series identifier, e.g. "GDP".</value>
+              </prop>
+            </node>
+            <node oor:name="apiKey" oor:op="replace">
+              <prop oor:name="DisplayName">
+                <value xml:lang="en">api_key</value>
+              </prop>
+              <prop oor:name="Description">
+                <value xml:lang="en">Optional. FRED API key; if omitted, the FRED_API_KEY environment variable is used. May reference a cell.</value>
+              </prop>
+            </node>
+            <node oor:name="headers" oor:op="replace">
+              <prop oor:name="DisplayName">
+                <value xml:lang="en">headers</value>
+              </prop>
+              <prop oor:name="Description">
+                <value xml:lang="en">Optional. 1 or TRUE prepends a "Field","Value" header row (default 0).</value>
               </prop>
             </node>
           </node>

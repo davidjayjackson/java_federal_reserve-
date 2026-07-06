@@ -8,6 +8,7 @@ functions as worksheet formulas:
 | `FRED_SERIES`      | `FRED_SERIES(series_id; [start_date]; [end_date]; [api_key]; [headers])` | spillable 2-column array `(date, value)` |
 | `FRED_DESCRIPTION` | `FRED_DESCRIPTION(series_id; [api_key])`                      | series title |
 | `FRED_META`        | `FRED_META(series_id; field; [api_key])`                      | one metadata field |
+| `FRED_FIELDS`      | `FRED_FIELDS(series_id; [api_key]; [headers])`                 | spillable 2-column array `(field, value)` — lists valid `FRED_META` fields |
 | `FRED_LATEST`      | `FRED_LATEST(series_id; [api_key])`                            | most recent value |
 
 > In Calc's UI, arguments are separated by **semicolons**:
@@ -143,6 +144,7 @@ type. Or in any sheet:
 ```
 =FRED_DESCRIPTION("GDP")                      -> Gross Domestic Product
 =FRED_META("GDP"; "units")                    -> Billions of Dollars
+=FRED_FIELDS("GDP")                           -> spills (field, value) rows
 =FRED_LATEST("UNRATE")                        -> e.g. 4.1
 =FRED_SERIES("GDP"; "2020-01-01"; "2024-01-01")  -> spills (date, value) rows
 ```
@@ -177,7 +179,9 @@ type. Or in any sheet:
 ## Automated test
 
 `tools\test_fred.py` drives a headless LibreOffice over a UNO socket and checks
-all four functions plus the error paths against live FRED data:
+the core functions plus the error paths against live FRED data (companion
+scripts `test_apikey.py`, `test_datecells.py`, `test_headers.py`, and
+`test_fields.py` cover the optional arguments and `FRED_FIELDS`):
 
 ```powershell
 $env:FRED_API_KEY = 'your_key'

@@ -77,8 +77,9 @@ module com { module example { module fred {
             @param seriesId
                 the FRED series identifier, e.g. "GDP".
             @param field
-                one of: units, frequency, seasonal_adjustment, last_updated,
-                notes, title, observation_start, observation_end.
+                one of the field names listed by FRED_FIELDS, e.g. units,
+                frequency, seasonal_adjustment, last_updated, notes, title,
+                observation_start, observation_end.
             @param apiKey
                 optional. FRED API key; overrides FRED_API_KEY when supplied.
             @returns
@@ -88,6 +89,29 @@ module com { module example { module fred {
             [in] string seriesId,
             [in] string field,
             [in] any apiKey )
+            raises ( ::com::sun::star::lang::IllegalArgumentException );
+
+        /** Return the available metadata fields for a series as a spillable
+            two-column array of (field, value). Use it to discover the valid
+            <em>field</em> values accepted by FRED_META.
+
+            @param seriesId
+                the FRED series identifier, e.g. "GDP".
+            @param apiKey
+                optional. FRED API key; overrides FRED_API_KEY when supplied.
+                Declared as <em>any</em> so it may be omitted.
+            @param headers
+                optional. When TRUE (or 1), the first returned row is a
+                "Field"/"Value" header row. Defaults to FALSE. Declared as
+                <em>any</em> so it may be omitted.
+            @returns
+                a matrix of rows; column 1 is the field name, column 2 is that
+                field's current value as text.
+         */
+        sequence< sequence< any > > fredFields(
+            [in] string seriesId,
+            [in] any apiKey,
+            [in] any headers )
             raises ( ::com::sun::star::lang::IllegalArgumentException );
 
         /** Return the most recent (non-missing) observation value.
