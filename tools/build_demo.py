@@ -69,18 +69,16 @@ def main():
             put(2, r, f)
             r += 1
 
-        # FRED_SERIES as a real multi-cell array formula.
-        # GDP is quarterly; 2022-01-01..2023-12-31 = 8 observations x 2 cols.
+        # FRED_SERIES as a real multi-cell array formula, with a header row.
+        # GDP is quarterly; 2022-01-01..2023-12-31 = 8 rows, + header = 9 rows.
         r += 1
-        put(0, r, "FRED_SERIES (array formula, GDP quarterly 2022-2023)")
+        put(0, r, "FRED_SERIES (array formula with headers, GDP quarterly 2022-2023)")
         r += 1
-        put(0, r, "date")
-        put(1, r, "value")
-        r += 1
-        first = r  # zero-based row index of first data row
-        rng = sh.getCellRangeByPosition(0, first, 1, first + 7)  # A..B, 8 rows
-        rng.setArrayFormula('=FRED_SERIES("GDP";"2022-01-01";"2023-12-31")')
-        put(2, first, '{=FRED_SERIES("GDP";"2022-01-01";"2023-12-31")}')
+        first = r  # header row is the first row of the array
+        rng = sh.getCellRangeByPosition(0, first, 1, first + 8)  # A..B, 9 rows
+        formula = '=FRED_SERIES("GDP";"2022-01-01";"2023-12-31";"";TRUE())'
+        rng.setArrayFormula(formula)
+        put(2, first, "{" + formula + "}  (select range, Ctrl+Shift+Enter)")
 
         # Widen columns a little for readability.
         cols = sh.Columns

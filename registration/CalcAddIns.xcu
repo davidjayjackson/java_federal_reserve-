@@ -36,7 +36,7 @@
                 <value xml:lang="en">start_date</value>
               </prop>
               <prop oor:name="Description">
-                <value xml:lang="en">Optional. Inclusive start date, ISO YYYY-MM-DD. Omit for no lower bound.</value>
+                <value xml:lang="en">Optional. Inclusive start date: an ISO YYYY-MM-DD string or a date cell. Omit for no lower bound.</value>
               </prop>
             </node>
             <node oor:name="endDate" oor:op="replace">
@@ -44,7 +44,7 @@
                 <value xml:lang="en">end_date</value>
               </prop>
               <prop oor:name="Description">
-                <value xml:lang="en">Optional. Inclusive end date, ISO YYYY-MM-DD. Omit for no upper bound.</value>
+                <value xml:lang="en">Optional. Inclusive end date: an ISO YYYY-MM-DD string or a date cell. Omit for no upper bound.</value>
               </prop>
             </node>
             <node oor:name="apiKey" oor:op="replace">
@@ -53,6 +53,14 @@
               </prop>
               <prop oor:name="Description">
                 <value xml:lang="en">Optional. FRED API key; if omitted, the FRED_API_KEY environment variable is used. May reference a cell.</value>
+              </prop>
+            </node>
+            <node oor:name="headers" oor:op="replace">
+              <prop oor:name="DisplayName">
+                <value xml:lang="en">headers</value>
+              </prop>
+              <prop oor:name="Description">
+                <value xml:lang="en">Optional. 1 or TRUE prepends a "Date","Value" header row (default 0).</value>
               </prop>
             </node>
           </node>

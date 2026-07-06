@@ -51,6 +51,8 @@ LibreOffice 26.2 (Windows).
 | `build.ps1` | `unoidl-write` → `javamaker` → `javac` (--release 8) → `jar` → zip `.oxt` |
 | `tools/test_fred.py` | Headless end-to-end test (all 4 functions + error paths) |
 | `tools/test_apikey.py` | Headless test of the optional `api_key` argument (env var unset) |
+| `tools/test_datecells.py` | Headless test of date-typed cell references in `FRED_SERIES` |
+| `tools/test_headers.py` | Headless test of the `FRED_SERIES` `headers` flag |
 | `tools/build_demo.py` | Regenerates the demo spreadsheet |
 | `test/fred_demo.ods` | Demo spreadsheet with live formulas |
 | `docs/INSTALL.md` | Full build / install / run instructions |
@@ -74,6 +76,11 @@ See `docs/INSTALL.md` for details. Key implementation notes:
 - **API key**: every function takes an optional trailing `api_key` argument
   (type it, or reference a cell: `=FRED_DESCRIPTION("GDP"; $B$1)`). When omitted,
   the key falls back to the `FRED_API_KEY` env var. Never hardcoded.
+- **Array output**: LibreOffice has no dynamic spill — select the output range
+  and enter `FRED_SERIES` as an array formula (Ctrl+Shift+Enter, or tick *Array*
+  in the Function Wizard). An optional trailing `headers` argument
+  (`TRUE`/`1`) prepends a `Date`/`Value` header row. `start_date`/`end_date`
+  accept an ISO string or a date-typed cell.
 - **Errors** (bad series, unknown field, missing key, network failure) surface as
   Calc error values (`Err:502`), not exception strings.
 - **Missing values** (FRED `.` sentinel) become empty cells; `FRED_LATEST` skips
@@ -87,6 +94,7 @@ See `docs/INSTALL.md` for details. Key implementation notes:
 =FRED_META("GDP"; "frequency")                   -> Quarterly
 =FRED_LATEST("UNRATE")                           -> 4.2
 =FRED_SERIES("GDP"; "2023-01-01"; "2023-12-31")  -> 4 rows (date, value)
+=FRED_SERIES("GDP"; "2023-01-01"; ""; ""; TRUE()) -> Date/Value header + rows
 =FRED_DESCRIPTION("GDP"; $B$1)                    -> key taken from cell B1
 ```
 

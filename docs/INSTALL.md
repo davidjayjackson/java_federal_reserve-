@@ -5,7 +5,7 @@ functions as worksheet formulas:
 
 | Function | Signature | Returns |
 |----------|-----------|---------|
-| `FRED_SERIES`      | `FRED_SERIES(series_id; [start_date]; [end_date]; [api_key])` | spillable 2-column array `(date, value)` |
+| `FRED_SERIES`      | `FRED_SERIES(series_id; [start_date]; [end_date]; [api_key]; [headers])` | spillable 2-column array `(date, value)` |
 | `FRED_DESCRIPTION` | `FRED_DESCRIPTION(series_id; [api_key])`                      | series title |
 | `FRED_META`        | `FRED_META(series_id; field; [api_key])`                      | one metadata field |
 | `FRED_LATEST`      | `FRED_LATEST(series_id; [api_key])`                            | most recent value |
@@ -152,6 +152,18 @@ type. Or in any sheet:
 - **Errors → Calc error values.** Bad series IDs, unknown metadata fields, a
   missing API key, or a network failure raise a UNO exception, which Calc shows
   as an error value (e.g. `#VALUE!`) in the cell — not an exception string.
+- **Multi-cell / spilling.** LibreOffice has no dynamic spill: to get all rows
+  of `FRED_SERIES`, select the output range (2 columns × N rows) and enter it as
+  an **array formula** — Ctrl+Shift+Enter, or tick **Array** in the Function
+  Wizard. A single-cell entry shows only the first value.
+- **Header row.** Pass `headers` = `TRUE` (or `1`) as the last `FRED_SERIES`
+  argument to prepend a `Date`/`Value` header row, e.g.
+  `=FRED_SERIES("GDP"; "2020-01-01"; ""; ""; TRUE())`. Add one extra row to the
+  selected range for the header.
+- **Date arguments.** `start_date` / `end_date` accept either an ISO
+  `YYYY-MM-DD` string or a **date-typed cell** (a numeric date serial is
+  converted using the default 1899-12-30 epoch), so `=FRED_SERIES(B4;B2;B3;B1)`
+  with date cells in `B2`/`B3` works.
 - **Missing observations.** FRED's `.` sentinel becomes an empty value cell in
   `FRED_SERIES`; `FRED_LATEST` skips missing values and returns the most recent
   numeric one.

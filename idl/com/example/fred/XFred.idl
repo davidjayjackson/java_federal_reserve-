@@ -40,6 +40,11 @@ module com { module example { module fred {
                 variable when supplied. Declared as <em>any</em> so it may be
                 omitted.
 
+            @param headers
+                optional. When TRUE (or 1), the first returned row is a
+                "Date"/"Value" header row. Defaults to FALSE. Declared as
+                <em>any</em> so it may be omitted.
+
             @returns
                 a matrix of rows; column 1 is the ISO date string, column 2 is
                 the numeric value. Missing observations (the FRED "." sentinel)
@@ -49,7 +54,8 @@ module com { module example { module fred {
             [in] string seriesId,
             [in] any startDate,
             [in] any endDate,
-            [in] any apiKey )
+            [in] any apiKey,
+            [in] any headers )
             raises ( ::com::sun::star::lang::IllegalArgumentException );
 
         /** Return the human-readable title of a series.

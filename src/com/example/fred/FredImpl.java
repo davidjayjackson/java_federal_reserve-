@@ -1,5 +1,6 @@
 package com.example.fred;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -48,22 +49,29 @@ public final class FredImpl extends WeakBase
     // ------------------------------------------------------------------ //
 
     /** {@inheritDoc} */
-    public Object[][] fredSeries(String seriesId, Object startDate, Object endDate, Object apiKey)
+    public Object[][] fredSeries(String seriesId, Object startDate, Object endDate,
+                                 Object apiKey, Object headers)
             throws IllegalArgumentException {
         String id = requireId(seriesId);
-        String start = optString(startDate);
-        String end = optString(endDate);
+        String start = optDate(startDate);
+        String end = optDate(endDate);
         String key = optString(apiKey);
+        boolean withHeader = truthy(headers);
         try {
             List<Object[]> rows = FredClient.observations(id, start, end, key);
             if (rows.isEmpty()) {
                 throw new IllegalArgumentException("No observations returned for " + id);
             }
-            Object[][] out = new Object[rows.size()][2];
+            int offset = withHeader ? 1 : 0;
+            Object[][] out = new Object[rows.size() + offset][2];
+            if (withHeader) {
+                out[0][0] = "Date";
+                out[0][1] = "Value";
+            }
             for (int r = 0; r < rows.size(); r++) {
                 Object[] row = rows.get(r);
-                out[r][0] = row[0];                       // ISO date string
-                out[r][1] = valueCell(row[1]);            // Double or empty (VOID)
+                out[r + offset][0] = row[0];              // ISO date string
+                out[r + offset][1] = valueCell(row[1]);   // Double or empty (VOID)
             }
             return out;
         } catch (RuntimeException e) {
@@ -134,10 +142,58 @@ public final class FredImpl extends WeakBase
         return seriesId.trim();
     }
 
-    /** Interpret an optional string argument (date, key); VOID/empty -> null. */
+    /** The spreadsheet date epoch (LibreOffice/Excel default null date). */
+    private static final LocalDate EPOCH = LocalDate.of(1899, 12, 30);
+
+    /** Unwrap a 1x1 matrix (a single-cell reference may arrive as Object[][]). */
+    private static Object scalar(Object arg) {
+        if (arg instanceof Object[][]) {
+            Object[][] m = (Object[][]) arg;
+            return (m.length > 0 && m[0].length > 0) ? m[0][0] : null;
+        }
+        return arg;
+    }
+
+    /** Interpret an optional boolean-ish argument; VOID/empty/0/"" -> false. */
+    private static boolean truthy(Object arg) {
+        arg = scalar(arg);
+        if (arg == null || arg instanceof Any) {
+            return false;
+        }
+        if (arg instanceof Boolean) {
+            return (Boolean) arg;
+        }
+        if (arg instanceof Number) {
+            return ((Number) arg).doubleValue() != 0;
+        }
+        String s = String.valueOf(arg).trim().toLowerCase();
+        return s.equals("1") || s.equals("true") || s.equals("yes")
+                || s.equals("y") || s.equals("t");
+    }
+
+    /** Interpret an optional string argument (series/key); VOID/empty -> null. */
     private static String optString(Object arg) {
+        arg = scalar(arg);
         if (arg == null || arg instanceof Any) {
             return null; // omitted argument arrives as VOID Any
+        }
+        String s = String.valueOf(arg).trim();
+        return s.isEmpty() ? null : s;
+    }
+
+    /**
+     * Interpret an optional date argument as ISO YYYY-MM-DD. Accepts either an
+     * ISO string (used as-is) or a spreadsheet date serial from a date-typed
+     * cell (converted using the default 1899-12-30 epoch). VOID/empty -> null.
+     */
+    private static String optDate(Object arg) {
+        arg = scalar(arg);
+        if (arg == null || arg instanceof Any) {
+            return null;
+        }
+        if (arg instanceof Number) {
+            long days = (long) Math.floor(((Number) arg).doubleValue());
+            return EPOCH.plusDays(days).toString(); // ISO-8601
         }
         String s = String.valueOf(arg).trim();
         return s.isEmpty() ? null : s;
@@ -196,7 +252,7 @@ public final class FredImpl extends WeakBase
 
     /** Per-function argument display names, indexed by position. */
     private static String[] argNames(String prog) {
-        if ("fredSeries".equals(prog)) return new String[] { "series_id", "start_date", "end_date", ARG_KEY };
+        if ("fredSeries".equals(prog)) return new String[] { "series_id", "start_date", "end_date", ARG_KEY, "headers" };
         if ("fredMeta".equals(prog))   return new String[] { "series_id", "field", ARG_KEY };
         if ("fredDescription".equals(prog) || "fredLatest".equals(prog)) return new String[] { "series_id", ARG_KEY };
         return new String[0];
@@ -207,9 +263,10 @@ public final class FredImpl extends WeakBase
         if ("fredSeries".equals(prog)) {
             return new String[] {
                 "FRED series identifier, e.g. \"GDP\".",
-                "Optional. Inclusive start date, ISO YYYY-MM-DD.",
-                "Optional. Inclusive end date, ISO YYYY-MM-DD.",
+                "Optional. Inclusive start date: ISO YYYY-MM-DD string or a date cell.",
+                "Optional. Inclusive end date: ISO YYYY-MM-DD string or a date cell.",
                 ARG_KEY_DESC,
+                "Optional. 1/TRUE prepends a \"Date\",\"Value\" header row (default 0).",
             };
         }
         if ("fredMeta".equals(prog)) {
