@@ -98,5 +98,9 @@ See `docs/INSTALL.md` for details. Key implementation notes:
 =FRED_DESCRIPTION("GDP"; $B$1)                    -> key taken from cell B1
 ```
 
+### License
+
+Released under the [MIT License](LICENSE).
+
 
 
