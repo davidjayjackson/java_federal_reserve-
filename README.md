@@ -57,6 +57,7 @@ LibreOffice 26.2 (Windows).
 | `tools/build_demo.py` | Regenerates the demo spreadsheet |
 | `test/fred_demo.ods` | Demo spreadsheet with live formulas |
 | `docs/INSTALL.md` | Full build / install / run instructions |
+| `CHANGELOG.md` | Release history |
 
 ### Install (prebuilt)
 
@@ -116,6 +117,10 @@ See `docs/INSTALL.md` for details. Key implementation notes:
 =FRED_SERIES("GDP"; "2023-01-01"; ""; ""; TRUE()) -> Date/Value header + rows
 =FRED_DESCRIPTION("GDP"; $B$1)                    -> key taken from cell B1
 ```
+
+### Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the release history.
 
 ### License
 
