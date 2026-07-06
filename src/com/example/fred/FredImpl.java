@@ -114,6 +114,32 @@ public final class FredImpl extends WeakBase
     }
 
     /** {@inheritDoc} */
+    public Object[][] fredFields(String seriesId, Object apiKey, Object headers)
+            throws IllegalArgumentException {
+        String id = requireId(seriesId);
+        boolean withHeader = truthy(headers);
+        try {
+            Map<String, Object> meta = FredClient.seriesMeta(id, optString(apiKey));
+            int offset = withHeader ? 1 : 0;
+            Object[][] out = new Object[meta.size() + offset][2];
+            if (withHeader) {
+                out[0][0] = "Field";
+                out[0][1] = "Value";
+            }
+            int r = offset;
+            for (Map.Entry<String, Object> e : meta.entrySet()) {
+                Object v = e.getValue();
+                out[r][0] = e.getKey();
+                out[r][1] = v == null ? "" : String.valueOf(v);
+                r++;
+            }
+            return out;
+        } catch (RuntimeException e) {
+            throw asCalcError(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     public double fredLatest(String seriesId, Object apiKey) throws IllegalArgumentException {
         String id = requireId(seriesId);
         try {
@@ -226,6 +252,7 @@ public final class FredImpl extends WeakBase
         { "fredSeries",      "FRED_SERIES" },
         { "fredDescription", "FRED_DESCRIPTION" },
         { "fredMeta",        "FRED_META" },
+        { "fredFields",      "FRED_FIELDS" },
         { "fredLatest",      "FRED_LATEST" },
     };
 
@@ -239,6 +266,9 @@ public final class FredImpl extends WeakBase
         }
         if ("fredMeta".equals(prog)) {
             return "Returns a single metadata field for a FRED series.";
+        }
+        if ("fredFields".equals(prog)) {
+            return "Lists a FRED series' metadata fields (and values) as a (field, value) array.";
         }
         if ("fredLatest".equals(prog)) {
             return "Returns the most recent non-missing observation value.";
@@ -254,6 +284,7 @@ public final class FredImpl extends WeakBase
     private static String[] argNames(String prog) {
         if ("fredSeries".equals(prog)) return new String[] { "series_id", "start_date", "end_date", ARG_KEY, "headers" };
         if ("fredMeta".equals(prog))   return new String[] { "series_id", "field", ARG_KEY };
+        if ("fredFields".equals(prog)) return new String[] { "series_id", ARG_KEY, "headers" };
         if ("fredDescription".equals(prog) || "fredLatest".equals(prog)) return new String[] { "series_id", ARG_KEY };
         return new String[0];
     }
@@ -272,8 +303,18 @@ public final class FredImpl extends WeakBase
         if ("fredMeta".equals(prog)) {
             return new String[] {
                 "FRED series identifier, e.g. \"GDP\".",
-                "Metadata field, e.g. units, frequency, seasonal_adjustment.",
+                "Metadata field. One of: id, title, units, units_short, frequency, "
+                    + "frequency_short, seasonal_adjustment, seasonal_adjustment_short, "
+                    + "observation_start, observation_end, last_updated, popularity, notes "
+                    + "(use FRED_FIELDS to list them for a series).",
                 ARG_KEY_DESC,
+            };
+        }
+        if ("fredFields".equals(prog)) {
+            return new String[] {
+                "FRED series identifier, e.g. \"GDP\".",
+                ARG_KEY_DESC,
+                "Optional. 1/TRUE prepends a \"Field\",\"Value\" header row (default 0).",
             };
         }
         if ("fredDescription".equals(prog) || "fredLatest".equals(prog)) {
