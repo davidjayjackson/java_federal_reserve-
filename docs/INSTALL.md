@@ -22,7 +22,9 @@ functions as worksheet formulas:
 
 ## 1. Prerequisites
 
-1. **LibreOffice + SDK** on Windows. Default install path
+### Windows
+
+1. **LibreOffice + SDK.** Default install path
    `C:\Program Files\LibreOffice`, with the SDK under `…\LibreOffice\sdk`.
    The SDK provides `sdk\bin\unoidl-write.exe` and `sdk\bin\javamaker.exe`.
 2. **A JDK to build with** — any JDK 8 or newer (`javac`, `jar`). The build
@@ -45,6 +47,73 @@ Confirm the tools resolve:
 & 'C:\Program Files\LibreOffice\sdk\bin\unoidl-write.exe' --help
 & 'C:\Program Files\LibreOffice\sdk\bin\javamaker.exe'    # prints usage
 & 'C:\Program Files\Android\Android Studio\jbr\bin\javac.exe' -version   # any 8+
+```
+
+### Linux / macOS
+
+1. **A JDK 8** (`javac`, `jar`). If your distro's package manager has one
+   (`apt install openjdk-8-jdk-headless`, `dnf install java-1.8.0-openjdk-devel`,
+   …) use that. Otherwise, no root needed — fetch a JDK 8 build straight from
+   Eclipse Adoptium/Temurin and unpack it under your home directory:
+
+   ```bash
+   curl -s "https://api.adoptium.net/v3/assets/latest/8/hotspot?architecture=x64&image_type=jdk&os=linux&vendor=eclipse" \
+     | grep -o '"link": *"[^"]*tar.gz"' | head -1 | cut -d'"' -f4
+   # download that URL, then:
+   mkdir -p ~/jdks && tar xzf OpenJDK8U-jdk_x64_linux_hotspot_*.tar.gz -C ~/jdks
+   export JAVA_HOME=~/jdks/jdk8u<version>   # match the extracted directory name
+   export PATH="$JAVA_HOME/bin:$PATH"
+   ```
+
+2. **LibreOffice + SDK.** If your distro packages a matching SDK
+   (`apt install libreoffice-dev libreoffice-dev-common` on Debian/Ubuntu),
+   use that and skip to confirming the tools below. Otherwise, download the
+   generic Linux tarballs (RPM-based; works on any distro since we only
+   extract the `.rpm`s, not install them) from
+   <https://download.documentfoundation.org/libreoffice/stable/>, e.g. for
+   26.2.4/x86_64: `LibreOffice_26.2.4_Linux_x86-64_rpm.tar.gz` and
+   `LibreOffice_26.2.4_Linux_x86-64_rpm_sdk.tar.gz`. Extract each `.rpm`
+   inside them with `rpm2cpio`/`cpio` into a prefix directory — no root
+   required:
+
+   ```bash
+   tar xzf LibreOffice_*_rpm.tar.gz LibreOffice_*_rpm_sdk.tar.gz
+   mkdir -p ~/opt
+   for rpm in LibreOffice_*_rpm/RPMS/*.rpm LibreOffice_*_rpm_sdk/RPMS/*.rpm; do
+     rpm2cpio "$rpm" | cpio -idm --no-absolute-filenames -D ~/opt
+   done
+   mv ~/opt/opt/libreoffice* ~/libreoffice26.2   # adjust to the extracted version
+   export LO_HOME=~/libreoffice26.2
+   ```
+
+   This lays out the same `program/` and `sdk/bin/` tree the Windows install
+   has (`unoidl-write`, `javamaker`, `types.rdb`, `program/classes/*.jar`).
+
+3. **Java vendor allow-list.** LibreOffice only loads a JVM whose
+   `java.vendor` appears in `$LO_HOME/program/javavendors.xml` (Sun, Oracle,
+   IBM, Blackdown, BEA, Azul, Amazon by default). A stock Temurin/Adoptium
+   build reports vendor `Temurin`, which is **not** on that list — `unopkg`
+   will fail with `CannotRegisterImplementationException: Could not create
+   Java implementation loader` when installing the extension. Add an entry
+   for it in your local `javavendors.xml` (this file lives inside your own
+   LibreOffice install, not a system-shared one, so editing it is safe):
+
+   ```xml
+   <vendor name="Temurin">
+     <minVersion>1.8.0</minVersion>
+   </vendor>
+   ```
+
+   Insert it next to the other `<vendor>` entries, inside `<vendorInfos>`.
+   (If your JDK came from your distro's package manager, its vendor is
+   usually already on the list and this step is unnecessary.)
+
+Confirm the tools resolve:
+
+```bash
+"$LO_HOME/sdk/bin/unoidl-write"          # prints usage
+"$LO_HOME/sdk/bin/javamaker"             # prints usage
+"$JAVA_HOME/bin/javac" -version          # any 8+
 ```
 
 ## 2. Provide the FRED API key (never hardcoded)
@@ -75,7 +144,19 @@ Persistent (survives reboots; restart LibreOffice afterwards):
 setx FRED_API_KEY "your_32_char_key"
 ```
 
+Linux / macOS — same idea, `export` instead of `$env:`/`setx`:
+
+```bash
+export FRED_API_KEY='your_32_char_key'
+"$LO_HOME/program/soffice"
+```
+
+Persistent: add the `export` line to `~/.bashrc` (or `~/.zshrc`), then restart
+your shell and LibreOffice.
+
 ## 3. Build the .oxt
+
+### Windows
 
 From the project root:
 
@@ -96,7 +177,7 @@ This runs the full pipeline and produces **`build\FRED.oxt`**:
 5. zip           staging tree        -> build\FRED.oxt
 ```
 
-### The equivalent commands by hand
+#### The equivalent commands by hand
 
 If you'd rather run each step yourself (paths assume the defaults above):
 
@@ -120,6 +201,57 @@ jar cfm build\oxt\fred.jar registration\MANIFEST.MF -C build\classes . -C build\
 #    (types/XFred.rdb, fred.jar, config/CalcAddIns.xcu, description.xml, META-INF/manifest.xml)
 ```
 
+### Linux / macOS
+
+`build.sh` is a POSIX port of `build.ps1` running the identical pipeline. From
+the project root:
+
+```bash
+export JAVA_HOME=~/jdks/jdk8u<version>   # or wherever your JDK 8 lives
+export LO_HOME=~/libreoffice26.2         # or wherever LibreOffice + SDK live
+./build.sh
+# or pass paths explicitly instead of the env vars:
+./build.sh --jdk ~/jdks/jdk8u<version> --libreoffice ~/libreoffice26.2
+```
+
+This produces `build/FRED.oxt` via the same five steps as `build.ps1`. Two
+JDK-8-specific quirks it works around, in case you're compiling by hand:
+
+- **`javac --release 8` doesn't exist on JDK 8 itself** (the flag was added
+  in JDK 9); `build.sh` detects a `1.x` `javac -version` and falls back to
+  `-source 8 -target 8`, which is equivalent for a straight JDK-8 build.
+- **`jar` on JDK 8 can reject duplicate directory entries** when packaging
+  two class trees that share a package path (`-C build/classes . -C build/gen
+  .` both contain `com/example/fred/`), throwing
+  `java.util.zip.ZipException: duplicate entry: com/`. `build.sh` merges
+  both trees into one staging directory first, then jars that single tree.
+
+#### The equivalent commands by hand
+
+```bash
+LO="$LO_HOME"
+export PATH="$LO/program:$PATH"
+
+# 1. IDL -> UNO type library
+"$LO/sdk/bin/unoidl-write" "$LO/program/types.rdb" idl build/types/XFred.rdb
+
+# 2. type library -> Java bindings
+"$LO/sdk/bin/javamaker" -nD -Gc -O build/gen -X "$LO/program/types.rdb" build/types/XFred.rdb
+
+# 3. compile (JDK 9+: --release 8; JDK 8 itself: -source 8 -target 8)
+"$JAVA_HOME/bin/javac" -source 8 -target 8 -cp "build/gen:$LO/program/classes/*" \
+  -d build/classes $(find src -name '*.java')
+
+# 4. merge classes + bindings (avoids the JDK-8 jar duplicate-entry issue), then jar
+mkdir -p build/jarstage
+cp -r build/classes/. build/jarstage/
+cp -r build/gen/. build/jarstage/
+"$JAVA_HOME/bin/jar" cfm build/oxt/fred.jar registration/MANIFEST.MF -C build/jarstage .
+
+# 5. stage config/types/manifest, then zip the four entries into build/FRED.oxt
+#    (types/XFred.rdb, fred.jar, config/CalcAddIns.xcu, description.xml, META-INF/manifest.xml)
+```
+
 ## 4. Install into LibreOffice
 
 Close LibreOffice first, then use `unopkg` from the SDK/program dir:
@@ -134,6 +266,15 @@ Close LibreOffice first, then use `unopkg` from the SDK/program dir:
 You can also install by double-clicking `build\FRED.oxt` (opens the Extension
 Manager). After installing, **restart LibreOffice** from a shell that has
 `FRED_API_KEY` set (step 2).
+
+Linux / macOS:
+
+```bash
+"$LO_HOME/program/unopkg" add --force build/FRED.oxt
+# list / remove:
+"$LO_HOME/program/unopkg" list
+"$LO_HOME/program/unopkg" remove com.example.fred
+```
 
 ## 5. Try it
 
@@ -198,6 +339,27 @@ Remove-Item Env:\FRED_API_KEY -ErrorAction SilentlyContinue
 & 'C:\Program Files\LibreOffice\program\python.exe' tools\test_apikey.py your_key
 ```
 
+Linux / macOS — same idea, LibreOffice's bundled `python` (it ships the `uno`
+module) instead of `python.exe`, run in the background so the shell isn't
+blocked:
+
+```bash
+export FRED_API_KEY='your_key'
+"$LO_HOME/program/soffice" --headless --norestore --accept="socket,host=localhost,port=2002;urp;" &
+"$LO_HOME/program/python" tools/test_fred.py   # prints RESULT: PASS
+```
+
+`test_apikey.py` verifies the optional `api_key` argument with `FRED_API_KEY`
+**unset** (`test_datecells.py`, `test_headers.py`, and `test_fields.py` also
+take the key as an argument). Each test script calls `desktop.terminate()`
+when it finishes, so relaunch `soffice` before running the next one:
+
+```bash
+unset FRED_API_KEY
+"$LO_HOME/program/soffice" --headless --norestore --accept="socket,host=localhost,port=2002;urp;" &
+"$LO_HOME/program/python" tools/test_apikey.py your_key
+```
+
 ## Troubleshooting
 
 - `unoidl-write` / `javamaker` "not found" → pass the right `-LibreOffice` path;
@@ -208,3 +370,7 @@ Remove-Item Env:\FRED_API_KEY -ErrorAction SilentlyContinue
   the process that launched LibreOffice. Set it, then launch `soffice` from that
   same environment (or `setx` it and fully restart LibreOffice, tray Quickstarter
   included).
+- `unopkg add` fails with `CannotRegisterImplementationException: Could not
+  create Java implementation loader` (Linux/macOS) → your JDK's vendor isn't
+  in `$LO_HOME/program/javavendors.xml`'s allow-list — see the Java vendor
+  allow-list note in Prerequisites.
